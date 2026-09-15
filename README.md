@@ -14,15 +14,15 @@ Turn static code review into an **autonomous, self-healing execution loop** — 
 
 ## Problem vs. Solution
 
-| Traditional Static Code Review | PatchSentinel Autonomous Loop |
-|--------------------------------|-------------------------------|
-| Human reads diffs and leaves comments | Webhook triggers a LangGraph state machine automatically |
-| Developer manually fixes lint/test failures | LLM generates unified-diff patches from structured diagnostics |
-| No verification that suggested fixes actually work | Every patch runs in an ephemeral Docker sandbox (`pytest` + `ruff`) |
-| Same mistakes repeated across review rounds | **Self-correction loop** injects prior `stdout`/`stderr` into the next LLM prompt |
-| AI-suggested changes can be merged unchecked | **Human-in-the-loop interrupt** blocks PR comments until explicit approval |
-| Workflow state lost on process restarts | **Redis / SQLite checkpointers** persist graph state by `thread_id` |
-| GitHub & LLM rate limits break pipelines | **Tenacity exponential backoff** on HTTP 429 and 5xx errors |
+| Traditional Static Code Review                     | PatchSentinel Autonomous Loop                                                     |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Human reads diffs and leaves comments              | Webhook triggers a LangGraph state machine automatically                          |
+| Developer manually fixes lint/test failures        | LLM generates unified-diff patches from structured diagnostics                    |
+| No verification that suggested fixes actually work | Every patch runs in an ephemeral Docker sandbox (`pytest` + `ruff`)               |
+| Same mistakes repeated across review rounds        | **Self-correction loop** injects prior `stdout`/`stderr` into the next LLM prompt |
+| AI-suggested changes can be merged unchecked       | **Human-in-the-loop interrupt** blocks PR comments until explicit approval        |
+| Workflow state lost on process restarts            | **Redis / SQLite checkpointers** persist graph state by `thread_id`               |
+| GitHub & LLM rate limits break pipelines           | **Tenacity exponential backoff** on HTTP 429 and 5xx errors                       |
 
 ---
 
@@ -99,11 +99,11 @@ PatchSentinel models workflow context in a typed **`AgentState`** (`pr_id`, `rep
 
 Checkpoints are keyed by `thread_id` (`{repo_name}#{pr_id}`) and configurable via `CHECKPOINT_BACKEND`:
 
-| Backend | Env | Best for |
-|---------|-----|----------|
-| `memory` | `CHECKPOINT_BACKEND=memory` | Local dev & unit tests |
-| `sqlite` | `CHECKPOINT_BACKEND=sqlite` | Single-node persistence |
-| `redis` | `CHECKPOINT_BACKEND=redis` | Production multi-worker deployments |
+| Backend  | Env                         | Best for                            |
+| -------- | --------------------------- | ----------------------------------- |
+| `memory` | `CHECKPOINT_BACKEND=memory` | Local dev & unit tests              |
+| `sqlite` | `CHECKPOINT_BACKEND=sqlite` | Single-node persistence             |
+| `redis`  | `CHECKPOINT_BACKEND=redis`  | Production multi-worker deployments |
 
 ```bash
 # docker-compose defaults to Redis
@@ -167,10 +167,10 @@ On approval, the API resumes the graph with `graph.stream(None, config)`, runs t
 
 External API calls are wrapped with **`tenacity`** exponential backoff (`@api_retry`):
 
-| Target | Retried conditions | Backoff |
-|--------|-------------------|---------|
+| Target                                                                 | Retried conditions                          | Backoff                    |
+| ---------------------------------------------------------------------- | ------------------------------------------- | -------------------------- |
 | GitHub API (`fetch_pull_request_files`, `post_approved_patch_comment`) | HTTP 429, 5xx, `RateLimitExceededException` | 1 s → 60 s, max 5 attempts |
-| LLM invocation (`_invoke_patch_llm`) | HTTP 429, 5xx, rate-limit exception types | 1 s → 60 s, max 5 attempts |
+| LLM invocation (`_invoke_patch_llm`)                                   | HTTP 429, 5xx, rate-limit exception types   | 1 s → 60 s, max 5 attempts |
 
 Configure max attempts via `API_RETRY_ATTEMPTS=5`.
 
@@ -213,11 +213,11 @@ docker build -f Dockerfile.sandbox -t autopatch-sandbox:latest .
 uv run python main.py
 ```
 
-| Resource | URL |
-|----------|-----|
-| API server | http://localhost:8000 |
-| Interactive docs | http://localhost:8000/docs |
-| Health check | http://localhost:8000/api/v1/health |
+| Resource         | URL                                 |
+| ---------------- | ----------------------------------- |
+| API server       | http://localhost:8000               |
+| Interactive docs | http://localhost:8000/docs          |
+| Health check     | http://localhost:8000/api/v1/health |
 
 ### 5. Run with Docker Compose (production stack)
 
@@ -238,21 +238,21 @@ The `app` service connects to Redis for checkpointing and mounts the Docker sock
 
 ## API Reference
 
-| Method | Endpoint | Description | Auth | Success Response |
-|--------|----------|-------------|------|------------------|
-| `GET` | `/api/v1/health` | Liveness probe | None | `200` `{ "status": "ok", "service": "autopatch-agent" }` |
-| `POST` | `/api/v1/webhooks/github` | Receive GitHub `pull_request` webhooks | `X-Hub-Signature-256` HMAC | `202` `{ "status": "processing", "thread_id": "owner/repo#17" }` |
-| `POST` | `/api/v1/workflows/review` | Submit human approval or rejection | None | `200` `{ "thread_id", "status", "state" }` |
+| Method | Endpoint                   | Description                            | Auth                       | Success Response                                                 |
+| ------ | -------------------------- | -------------------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| `GET`  | `/api/v1/health`           | Liveness probe                         | None                       | `200` `{ "status": "ok", "service": "autopatch-agent" }`         |
+| `POST` | `/api/v1/webhooks/github`  | Receive GitHub `pull_request` webhooks | `X-Hub-Signature-256` HMAC | `202` `{ "status": "processing", "thread_id": "owner/repo#17" }` |
+| `POST` | `/api/v1/workflows/review` | Submit human approval or rejection     | None                       | `200` `{ "thread_id", "status", "state" }`                       |
 
 ### `POST /api/v1/webhooks/github`
 
 **Headers**
 
-| Header | Required | Description |
-|--------|----------|-------------|
-| `X-GitHub-Event` | Yes | Must be `pull_request` |
-| `X-Hub-Signature-256` | Yes | HMAC-SHA256 of raw body using `GITHUB_WEBHOOK_SECRET` |
-| `Content-Type` | Yes | `application/json` |
+| Header                | Required | Description                                           |
+| --------------------- | -------- | ----------------------------------------------------- |
+| `X-GitHub-Event`      | Yes      | Must be `pull_request`                                |
+| `X-Hub-Signature-256` | Yes      | HMAC-SHA256 of raw body using `GITHUB_WEBHOOK_SECRET` |
+| `Content-Type`        | Yes      | `application/json`                                    |
 
 **Handled actions:** `opened`, `synchronize`
 
@@ -283,20 +283,20 @@ Ignored events return `202` with `{ "status": "ignored", "thread_id": "" }`.
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `thread_id` | `string` | Workflow identifier (`{repo}#{pr_number}`) |
-| `approved` | `boolean` | `true` to post patch; `false` to reject |
-| `feedback` | `string \| null` | Optional reviewer note stored in state |
+| Field       | Type             | Description                                |
+| ----------- | ---------------- | ------------------------------------------ |
+| `thread_id` | `string`         | Workflow identifier (`{repo}#{pr_number}`) |
+| `approved`  | `boolean`        | `true` to post patch; `false` to reject    |
+| `feedback`  | `string \| null` | Optional reviewer note stored in state     |
 
 **Responses**
 
-| Code | Condition |
-|------|-----------|
-| `200` | Review processed; graph resumed or terminated |
-| `404` | No checkpoint found for `thread_id` |
+| Code  | Condition                                      |
+| ----- | ---------------------------------------------- |
+| `200` | Review processed; graph resumed or terminated  |
+| `404` | No checkpoint found for `thread_id`            |
 | `409` | Workflow not in `awaiting_human_review` status |
-| `422` | Approved workflow missing `generated_patch` |
+| `422` | Approved workflow missing `generated_patch`    |
 
 ---
 
@@ -407,20 +407,20 @@ uv run pytest tests/test_api_routes.py -v
 
 ## Configuration
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GITHUB_TOKEN` | — | GitHub PAT for API access |
-| `GITHUB_WEBHOOK_SECRET` | — | HMAC secret for webhook verification |
-| `OPENAI_API_KEY` | — | Required when `LLM_PROVIDER=openai` |
-| `ANTHROPIC_API_KEY` | — | Required when `LLM_PROVIDER=anthropic` |
-| `LLM_PROVIDER` | `openai` | `openai` or `anthropic` |
-| `LLM_MODEL` | `gpt-4o` | Model name for patch generation |
-| `CHECKPOINT_BACKEND` | `memory` | `memory`, `sqlite`, or `redis` |
-| `REDIS_URL` | `redis://localhost:6379/0` | Redis URL for checkpointing |
-| `CHECKPOINT_DB_URL` | `sqlite:///./data/checkpoints.db` | SQLite path when backend=sqlite |
-| `MAX_RETRY_COUNT` | `3` | Self-correction attempts before escalation |
-| `SANDBOX_IMAGE` | `autopatch-sandbox:latest` | Docker image for validation |
-| `API_RETRY_ATTEMPTS` | `5` | Max tenacity retries for 429/5xx |
+| Variable                | Default                           | Description                                |
+| ----------------------- | --------------------------------- | ------------------------------------------ |
+| `GITHUB_TOKEN`          | —                                 | GitHub PAT for API access                  |
+| `GITHUB_WEBHOOK_SECRET` | —                                 | HMAC secret for webhook verification       |
+| `OPENAI_API_KEY`        | —                                 | Required when `LLM_PROVIDER=openai`        |
+| `ANTHROPIC_API_KEY`     | —                                 | Required when `LLM_PROVIDER=anthropic`     |
+| `LLM_PROVIDER`          | `openai`                          | `openai` or `anthropic`                    |
+| `LLM_MODEL`             | `gpt-4o`                          | Model name for patch generation            |
+| `CHECKPOINT_BACKEND`    | `memory`                          | `memory`, `sqlite`, or `redis`             |
+| `REDIS_URL`             | `redis://localhost:6379/0`        | Redis URL for checkpointing                |
+| `CHECKPOINT_DB_URL`     | `sqlite:///./data/checkpoints.db` | SQLite path when backend=sqlite            |
+| `MAX_RETRY_COUNT`       | `3`                               | Self-correction attempts before escalation |
+| `SANDBOX_IMAGE`         | `autopatch-sandbox:latest`        | Docker image for validation                |
+| `API_RETRY_ATTEMPTS`    | `5`                               | Max tenacity retries for 429/5xx           |
 
 ---
 
@@ -449,19 +449,15 @@ patchsentinel/
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Orchestration | LangGraph `StateGraph` with conditional edges |
-| API | FastAPI + Uvicorn |
-| LLM | OpenAI / Anthropic via LangChain structured output |
-| Sandbox | Docker SDK (`python:3.11-slim`) |
-| VCS Integration | PyGithub |
-| Persistence | Redis · SQLite · in-memory checkpointers |
-| Resiliency | Tenacity exponential backoff |
-| Packaging | uv · Docker Compose |
+| Layer           | Technology                                         |
+| --------------- | -------------------------------------------------- |
+| Orchestration   | LangGraph `StateGraph` with conditional edges      |
+| API             | FastAPI + Uvicorn                                  |
+| LLM             | OpenAI / Anthropic via LangChain structured output |
+| Sandbox         | Docker SDK (`python:3.11-slim`)                    |
+| VCS Integration | PyGithub                                           |
+| Persistence     | Redis · SQLite · in-memory checkpointers           |
+| Resiliency      | Tenacity exponential backoff                       |
+| Packaging       | uv · Docker Compose                                |
 
 ---
-
-## License
-
-MIT
