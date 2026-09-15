@@ -1,0 +1,26 @@
+# Isolated sandbox environment for pytest and ruff validation
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /workspace
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip && pip install \
+    pytest>=8.3.0 \
+    ruff>=0.8.0
+
+# Non-root execution
+RUN useradd --create-home --shell /bin/bash sandbox
+USER sandbox
+
+COPY --chown=sandbox:sandbox sandbox-entrypoint.sh /usr/local/bin/sandbox-entrypoint.sh
+RUN chmod +x /usr/local/bin/sandbox-entrypoint.sh
+
+ENTRYPOINT ["sandbox-entrypoint.sh"]
+CMD ["pytest", "-q"]
